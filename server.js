@@ -399,33 +399,21 @@ app.get("/oauth2/callback", async (req, res) => {
   }
   try {
     // Exchange code for tokens
-    const tokenResp = await axios.post(process.env.OAUTH2_TOKEN_URL, null, {
-      params: {
-        code,
-        client_id: process.env.GOOGLE_CLIENT_ID,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: process.env.OAUTH2_REDIRECT_URI,
-        grant_type: "authorization_code",
-      },
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    });
+    const tokenParams = new URLSearchParams();
+    tokenParams.append("code", code);
+    tokenParams.append("client_id", process.env.GOOGLE_CLIENT_ID);
+    tokenParams.append("client_secret", process.env.GOOGLE_CLIENT_SECRET);
+    tokenParams.append("redirect_uri", process.env.OAUTH2_REDIRECT_URI);
+    tokenParams.append("grant_type", "authorization_code");
+
+    const tokenResp = await axios.post(
+      process.env.OAUTH2_TOKEN_URL,
+      tokenParams
+    );
     // Log the full token response for debugging
     console.log("Google token response:", tokenResp.data);
     const { access_token, refresh_token, id_token } = tokenResp.data;
     console.log("Access token received from Google:", access_token); // Log access token
-    if (!access_token) {
-      // If no access_token, return error and log full response
-      console.error("No access_token received from Google:", tokenResp.data);
-      return res
-        .status(500)
-        .send(
-          `<pre>OAuth2 setup failed.\n\nNo access_token received from Google.\n\nToken Response: ${JSON.stringify(
-            tokenResp.data,
-            null,
-            2
-          )}</pre>`
-        );
-    }
     // Get teacher's email from Google
     let userResp;
     try {
