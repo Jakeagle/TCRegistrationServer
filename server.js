@@ -438,8 +438,20 @@ app.get("/oauth2/callback", async (req, res) => {
     // Redirect to dashboard
     return res.redirect("https://trincapdash.netlify.app");
   } catch (err) {
-    console.error("OAuth2 callback error:", err.response?.data || err.message);
-    return res.status(500).send("OAuth2 setup failed. Please contact support.");
+    // Enhanced error logging for debugging
+    console.error("OAuth2 callback error (full):", {
+      message: err.message,
+      responseData: err.response?.data,
+      responseStatus: err.response?.status,
+      stack: err.stack,
+    });
+    return res.status(500).send(
+      `<pre>OAuth2 setup failed.\n\nError: ${err.message}\n\nResponse Data: ${JSON.stringify(
+        err.response?.data,
+        null,
+        2
+      )}\n\nStack: ${err.stack}</pre>`
+    );
   }
 });
 
