@@ -412,12 +412,19 @@ app.get("/oauth2/callback", async (req, res) => {
     // Log the full token response for debugging
     console.log("Google token response:", tokenResp.data);
     const { access_token, refresh_token, id_token } = tokenResp.data;
+    console.log("Access token received from Google:", access_token); // Log access token
     if (!access_token) {
       // If no access_token, return error and log full response
       console.error("No access_token received from Google:", tokenResp.data);
-      return res.status(500).send(
-        `<pre>OAuth2 setup failed.\n\nNo access_token received from Google.\n\nToken Response: ${JSON.stringify(tokenResp.data, null, 2)}</pre>`
-      );
+      return res
+        .status(500)
+        .send(
+          `<pre>OAuth2 setup failed.\n\nNo access_token received from Google.\n\nToken Response: ${JSON.stringify(
+            tokenResp.data,
+            null,
+            2
+          )}</pre>`
+        );
     }
     // Get teacher's email from Google
     let userResp;
@@ -436,9 +443,17 @@ app.get("/oauth2/callback", async (req, res) => {
         responseStatus: userInfoErr.response?.status,
         stack: userInfoErr.stack,
       });
-      return res.status(500).send(
-        `<pre>OAuth2 setup failed at userinfo step.\n\nError: ${userInfoErr.message}\n\nResponse Data: ${JSON.stringify(userInfoErr.response?.data, null, 2)}\n\nStack: ${userInfoErr.stack}</pre>`
-      );
+      return res
+        .status(500)
+        .send(
+          `<pre>OAuth2 setup failed at userinfo step.\n\nError: ${
+            userInfoErr.message
+          }\n\nResponse Data: ${JSON.stringify(
+            userInfoErr.response?.data,
+            null,
+            2
+          )}\n\nStack: ${userInfoErr.stack}</pre>`
+        );
     }
     const email = userResp.data.email;
     // Store tokens and email in Teachers collection
@@ -468,9 +483,17 @@ app.get("/oauth2/callback", async (req, res) => {
       responseStatus: err.response?.status,
       stack: err.stack,
     });
-    return res.status(500).send(
-      `<pre>OAuth2 setup failed.\n\nError: ${err.message}\n\nResponse Data: ${JSON.stringify(err.response?.data, null, 2)}\n\nStack: ${err.stack}</pre>`
-    );
+    return res
+      .status(500)
+      .send(
+        `<pre>OAuth2 setup failed.\n\nError: ${
+          err.message
+        }\n\nResponse Data: ${JSON.stringify(
+          err.response?.data,
+          null,
+          2
+        )}\n\nStack: ${err.stack}</pre>`
+      );
   }
 });
 
