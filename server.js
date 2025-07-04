@@ -322,7 +322,7 @@ app.post("/createAccount", async (req, res) => {
     )}&redirect_uri=${encodeURIComponent(
       process.env.OAUTH2_REDIRECT_URI
     )}&response_type=code&scope=${encodeURIComponent(
-      "https://mail.google.com/"
+      "https://mail.google.com/ https://www.googleapis.com/auth/userinfo.email"
     )}&access_type=offline&prompt=consent&state=${encodeURIComponent(
       userName
     )}`;
