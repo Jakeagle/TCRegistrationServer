@@ -1,36 +1,36 @@
-require("dotenv").config();
+require('dotenv').config();
 
-const express = require("express");
+const express = require('express');
 const app = express();
-const cron = require("node-cron");
-const { fork } = require("child_process");
-const crypto = require("crypto");
-const nodemailer = require("nodemailer");
-const bcrypt = require("bcrypt");
-const axios = require("axios");
+const cron = require('node-cron');
+const { fork } = require('child_process');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+const bcrypt = require('bcrypt');
+const axios = require('axios');
 
-const cors = require("cors");
-const bodyParser = require("body-parser");
+const cors = require('cors');
+const bodyParser = require('body-parser');
 let Profiles;
 
 const port = process.env.PORT || 5000;
-const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",");
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
 const mongoUri = process.env.MONGODB_URI;
 
-const server = require("http").createServer(app);
+const server = require('http').createServer(app);
 
-const io = require("socket.io")(server, {
+const io = require('socket.io')(server, {
   cors: {
-    origin: process.env.SOCKET_ORIGIN.split(","),
-    methods: ["GET", "POST"],
+    origin: process.env.SOCKET_ORIGIN.split(','),
+    methods: ['GET', 'POST'],
     credentials: true,
   },
 });
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
-const ioClient = require("socket.io-client");
+const { MongoClient, ServerApiVersion } = require('mongodb');
+const ioClient = require('socket.io-client');
 const remoteSocketUrl =
-  process.env.REMOTE_SOCKET_URL || "http://localhost:5000";
+  process.env.REMOTE_SOCKET_URL || 'http://localhost:5000';
 const remoteSocket = ioClient(remoteSocketUrl);
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -47,9 +47,9 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    await client.db('admin').command({ ping: 1 });
     console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
+      'Pinged your deployment. You successfully connected to MongoDB!'
     );
   } finally {
     // // Ensures that the client will close when you finish/error
@@ -58,7 +58,7 @@ async function run() {
 }
 run().catch(console.dir);
 
-app.use(express.static("public"));
+app.use(express.static('public'));
 app.use(express.json());
 app.use(
   cors({
@@ -84,25 +84,25 @@ async function handleStudentCreatedPostEmit({
   const studentObj = { name: memberName, username: userName };
   // Log the teacher's periods array for debugging
   const teacherDoc = await db
-    .collection("Teachers")
+    .collection('Teachers')
     .findOne({ _id: matchedTeacher._id });
   console.log(
-    "Teacher periods before update:",
+    'Teacher periods before update:',
     JSON.stringify(teacherDoc.periods, null, 2)
   );
   // Try to push to the students array of the correct period
   const updateResult = await db
-    .collection("Teachers")
+    .collection('Teachers')
     .updateOne(
-      { _id: matchedTeacher._id, "periods.period": periodStr },
-      { $push: { "periods.$.students": studentObj } }
+      { _id: matchedTeacher._id, 'periods.period': periodStr },
+      { $push: { 'periods.$.students': studentObj } }
     );
-  console.log("Update result:", updateResult);
+  console.log('Update result:', updateResult);
   if (updateResult.matchedCount === 0) {
-    console.log("No matching period found for period:", periodStr);
+    console.log('No matching period found for period:', periodStr);
   }
   // Emit studentAdded event for frontend
-  io.emit("studentAdded", {
+  io.emit('studentAdded', {
     memberName: newAccount.memberName,
     classPeriod: newAccount.classPeriod || periodStr,
     checkingBalance: newAccount.checkingAccount.balanceTotal,
@@ -110,8 +110,8 @@ async function handleStudentCreatedPostEmit({
     grade: newAccount.grade || null,
     lessonsCompleted: newAccount.lessonsCompleted || 0,
   });
-  const redirectUrl = "https://trinitycapitalsimulation.netlify.app";
-  io.emit("creationSuccesful", { account: newAccount, redirectUrl });
+  const redirectUrl = 'https://trinitycapitalsimulation.netlify.app';
+  io.emit('creationSuccesful', { account: newAccount, redirectUrl });
   res.status(201).json({ account: newAccount, redirectUrl });
 }
 
@@ -122,10 +122,10 @@ function emitWithAck(socket, event, data, timeoutMs = 2000) {
     const timer = setTimeout(() => {
       if (!called) {
         called = true;
-        reject(new Error("Socket emit ack timeout"));
+        reject(new Error('Socket emit ack timeout'));
       }
     }, timeoutMs);
-    socket.emit(event, data, (ack) => {
+    socket.emit(event, data, ack => {
       if (!called) {
         called = true;
         clearTimeout(timer);
@@ -135,8 +135,8 @@ function emitWithAck(socket, event, data, timeoutMs = 2000) {
   });
 }
 
-app.post("/createAccount", async (req, res) => {
-  const db = client.db("TrinityCapital");
+app.post('/createAccount', async (req, res) => {
+  const db = client.db('TrinityCapital');
   const { parcel } = req.body;
 
   const firstName = parcel[0];
@@ -165,42 +165,42 @@ app.post("/createAccount", async (req, res) => {
 
   // Student code parsing logic
   if (!accessCode) {
-    io.emit("noSchoolCodeFound", modal);
-    return res.status(400).json({ error: "No access code provided" });
+    io.emit('noSchoolCodeFound', modal);
+    return res.status(400).json({ error: 'No access code provided' });
   }
 
   // If code is in the format US-NMHS-23A442C4-02
-  const codeParts = accessCode.split("-");
+  const codeParts = accessCode.split('-');
   if (codeParts.length === 4) {
     const codeSegment = codeParts[2]; // 23A442C4
     const periodSegment = codeParts[3]; // 02
     // Hash the code segment using crypto to match teacher accessCode
     const hashedCodeSegment = crypto
-      .createHash("sha256")
+      .createHash('sha256')
       .update(codeSegment)
-      .digest("hex");
+      .digest('hex');
     // Find teacher by comparing hashedCodeSegment to all teacher accessCodes
-    const teachers = await db.collection("Teachers").find({}).toArray();
+    const teachers = await db.collection('Teachers').find({}).toArray();
     let matchedTeacher = null;
     for (const teacher of teachers) {
       // Log the values and the result of comparison
       console.log(
-        "Comparing:",
+        'Comparing:',
         hashedCodeSegment,
-        "(hashed) with",
+        '(hashed) with',
         teacher.accessCode,
-        "(hashed from DB)"
+        '(hashed from DB)'
       );
       const compareResult = hashedCodeSegment === teacher.accessCode;
-      console.log("crypto hash compare result:", compareResult);
+      console.log('crypto hash compare result:', compareResult);
       if (compareResult) {
         matchedTeacher = teacher;
         break;
       }
     }
     if (!matchedTeacher) {
-      io.emit("noSchoolCodeFound", modal);
-      return res.status(400).json({ error: "Invalid or used access code" });
+      io.emit('noSchoolCodeFound', modal);
+      return res.status(400).json({ error: 'Invalid or used access code' });
     }
     let newAccount = {
       memberName: memberName,
@@ -209,44 +209,46 @@ app.post("/createAccount", async (req, res) => {
       teacher: matchedTeacher.name,
       school: matchedTeacher.school,
       classPeriod: parseInt(periodSegment, 10),
+      grade: 100,
+      lessons: 0,
       checkingAccount: {
         routingNumber: 141257185,
-        currency: "USD",
-        locale: "en-US",
+        currency: 'USD',
+        locale: 'en-US',
         created: `${date}`,
         accountHolder: memberName,
         balanceTotal: 0,
         bills: [],
         payments: [],
-        accountType: "Checking",
+        accountType: 'Checking',
         accountNumber: accountNumCheck.toString(),
         movementsDates: [],
         transactions: [],
       },
       savingsAccount: {
         routingNumber: 141257185,
-        currency: "USD",
-        locale: "en-US",
+        currency: 'USD',
+        locale: 'en-US',
         created: `${date}`,
         accountHolder: memberName,
         username: userName,
         balanceTotal: 0,
         bills: [],
         payments: [],
-        accountType: "Savings",
+        accountType: 'Savings',
         accountNumber: accountNumSav.toString(),
         movementsDates: [],
         transactions: [],
       },
       userName: userName,
     };
-    await db.collection("User Profiles").insertOne(newAccount);
+    await db.collection('User Profiles').insertOne(newAccount);
     try {
-      const ack = await emitWithAck(remoteSocket, "studentCreated", newAccount);
+      const ack = await emitWithAck(remoteSocket, 'studentCreated', newAccount);
       if (ack && ack.success) {
-        console.log("Remote socket emit successful:", ack);
+        console.log('Remote socket emit successful:', ack);
       } else {
-        console.warn("Remote socket emit ack received but not success:", ack);
+        console.warn('Remote socket emit ack received but not success:', ack);
       }
       await handleStudentCreatedPostEmit({
         db,
@@ -260,44 +262,44 @@ app.post("/createAccount", async (req, res) => {
         date,
       });
     } catch (err) {
-      console.error("Remote socket emit failed:", err);
-      res.status(500).json({ error: "Socket emit failed" });
+      console.error('Remote socket emit failed:', err);
+      res.status(500).json({ error: 'Socket emit failed' });
     }
     return;
   }
 
   // Check for a legitimate access code before creating an account
-  let codes = await db.collection("Access Codes").findOne({ code: accessCode });
+  let codes = await db.collection('Access Codes').findOne({ code: accessCode });
   if (codes === null) {
     // Broadcast error message
-    io.emit("noSchoolCodeFound", modal);
-    return res.status(400).json({ error: "Invalid or used access code" });
+    io.emit('noSchoolCodeFound', modal);
+    return res.status(400).json({ error: 'Invalid or used access code' });
   }
   // Check if this is a teacher code
-  const isTeacher = codes.type === "teacher";
+  const isTeacher = codes.type === 'teacher';
   const redirectUrl = isTeacher
-    ? "https://trincapdash.netlify.app"
-    : "https://trinitycapitalsimulation.netlify.app";
+    ? 'https://trincapdash.netlify.app'
+    : 'https://trinitycapitalsimulation.netlify.app';
 
   // Extract teacher, school, and class period from the access code document
-  const teacher = codes.teacher || "";
-  const school = codes.school || "";
-  const classPeriod = codes.classPeriod || "";
+  const teacher = codes.teacher || '';
+  const school = codes.school || '';
+  const classPeriod = codes.classPeriod || '';
 
   if (isTeacher) {
     // Hash the PIN and access code for teacher
-    const hashedPin = crypto.createHash("sha256").update(PIN).digest("hex");
+    const hashedPin = crypto.createHash('sha256').update(PIN).digest('hex');
     const hashedAccessCode = crypto
-      .createHash("sha256")
+      .createHash('sha256')
       .update(accessCode)
-      .digest("hex");
+      .digest('hex');
     // Check if a teacher already exists with this access code
-    const existingTeacher = await db.collection("Teachers").findOne({
+    const existingTeacher = await db.collection('Teachers').findOne({
       accessCode: hashedAccessCode,
     });
     if (existingTeacher) {
-      io.emit("noSchoolCodeFound", modal);
-      return res.status(400).json({ error: "Invalid or used access code" });
+      io.emit('noSchoolCodeFound', modal);
+      return res.status(400).json({ error: 'Invalid or used access code' });
     }
     const teacherProfile = {
       name: memberName,
@@ -306,10 +308,10 @@ app.post("/createAccount", async (req, res) => {
       pin: hashedPin,
       school: school,
     };
-    await db.collection("Teachers").insertOne(teacherProfile);
+    await db.collection('Teachers').insertOne(teacherProfile);
     // Mark the access code as used
     await db
-      .collection("Access Codes")
+      .collection('Access Codes')
       .updateOne(
         { code: accessCode },
         { $set: { used: true, usedBy: userName, usedAt: new Date() } }
@@ -322,7 +324,7 @@ app.post("/createAccount", async (req, res) => {
     )}&redirect_uri=${encodeURIComponent(
       process.env.OAUTH2_REDIRECT_URI
     )}&response_type=code&scope=${encodeURIComponent(
-      "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email"
+      'https://mail.google.com/'
     )}&access_type=offline&prompt=consent&state=${encodeURIComponent(
       userName
     )}`;
@@ -341,117 +343,93 @@ app.post("/createAccount", async (req, res) => {
       teacher: teacher,
       school: school,
       classPeriod: classPeriod,
+      grade: 100,
+      lessons: 0,
       checkingAccount: {
         routingNumber: 141257185,
-        currency: "USD",
-        locale: "en-US",
+        currency: 'USD',
+        locale: 'en-US',
         created: `${date}`,
         accountHolder: memberName,
         balanceTotal: 0,
         bills: [],
         payments: [],
-        accountType: "Checking",
+        accountType: 'Checking',
         accountNumber: accountNumCheck.toString(),
         movementsDates: [],
         transactions: [],
       },
       savingsAccount: {
         routingNumber: 141257185,
-        currency: "USD",
-        locale: "en-US",
+        currency: 'USD',
+        locale: 'en-US',
         created: `${date}`,
         accountHolder: memberName,
         username: userName,
         balanceTotal: 0,
         bills: [],
         payments: [],
-        accountType: "Savings",
+        accountType: 'Savings',
         accountNumber: accountNumSav.toString(),
         movementsDates: [],
         transactions: [],
       },
       userName: userName,
     };
-    await db.collection("User Profiles").insertOne(newAccount);
+    await db.collection('User Profiles').insertOne(newAccount);
     try {
-      const ack = await emitWithAck(remoteSocket, "studentCreated", newAccount);
+      const ack = await emitWithAck(remoteSocket, 'studentCreated', newAccount);
       if (ack && ack.success) {
-        console.log("Remote socket emit successful:", ack);
+        console.log('Remote socket emit successful:', ack);
       } else {
-        console.warn("Remote socket emit ack received but not success:", ack);
+        console.warn('Remote socket emit ack received but not success:', ack);
       }
-      io.emit("creationSuccesful", { account: newAccount, redirectUrl });
+      io.emit('creationSuccesful', { account: newAccount, redirectUrl });
       res.status(201).json({ account: newAccount, redirectUrl });
     } catch (err) {
-      console.error("Remote socket emit failed:", err);
-      res.status(500).json({ error: "Socket emit failed" });
+      console.error('Remote socket emit failed:', err);
+      res.status(500).json({ error: 'Socket emit failed' });
     }
     return;
   }
 });
 
 // Google OAuth2 callback handler
-app.get("/oauth2/callback", async (req, res) => {
+app.get('/oauth2/callback', async (req, res) => {
   const code = req.query.code;
   const state = req.query.state; // This is the teacher's username
   if (!code || !state) {
-    return res.status(400).send("Missing code or state");
+    return res.status(400).send('Missing code or state');
   }
   try {
     // Exchange code for tokens
-    const tokenParams = new URLSearchParams();
-    tokenParams.append("code", code);
-    tokenParams.append("client_id", process.env.GOOGLE_CLIENT_ID);
-    tokenParams.append("client_secret", process.env.GOOGLE_CLIENT_SECRET);
-    tokenParams.append("redirect_uri", process.env.OAUTH2_REDIRECT_URI);
-    tokenParams.append("grant_type", "authorization_code");
-
-    const tokenResp = await axios.post(
-      process.env.OAUTH2_TOKEN_URL,
-      tokenParams
-    );
-    // Log the full token response for debugging
-    console.log("Google token response:", tokenResp.data);
+    const tokenResp = await axios.post(process.env.OAUTH2_TOKEN_URL, null, {
+      params: {
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: process.env.OAUTH2_REDIRECT_URI,
+        grant_type: 'authorization_code',
+      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
     const { access_token, refresh_token, id_token } = tokenResp.data;
-    console.log("Access token received from Google:", access_token); // Log access token
     // Get teacher's email from Google
-    let userResp;
-    try {
-      userResp = await axios.get(
-        "https://www.googleapis.com/oauth2/v2/userinfo",
-        {
-          headers: { Authorization: `Bearer ${access_token}` },
-        }
-      );
-    } catch (userInfoErr) {
-      // Log and return error if userinfo call fails
-      console.error("Google userinfo error:", {
-        message: userInfoErr.message,
-        responseData: userInfoErr.response?.data,
-        responseStatus: userInfoErr.response?.status,
-        stack: userInfoErr.stack,
-      });
-      return res
-        .status(500)
-        .send(
-          `<pre>OAuth2 setup failed at userinfo step.\n\nError: ${
-            userInfoErr.message
-          }\n\nResponse Data: ${JSON.stringify(
-            userInfoErr.response?.data,
-            null,
-            2
-          )}\n\nStack: ${userInfoErr.stack}</pre>`
-        );
-    }
+    const userResp = await axios.get(
+      'https://www.googleapis.com/oauth2/v2/userinfo',
+      {
+        headers: { Authorization: `Bearer ${access_token}` },
+      }
+    );
     const email = userResp.data.email;
     // Store tokens and email in Teachers collection
-    const db = client.db("TrinityCapital");
-    await db.collection("Teachers").updateOne(
+    const db = client.db('TrinityCapital');
+    await db.collection('Teachers').updateOne(
       { username: state },
       {
         $set: {
           oauth: {
-            provider: "google",
+            provider: 'google',
             email,
             access_token,
             refresh_token,
@@ -462,26 +440,10 @@ app.get("/oauth2/callback", async (req, res) => {
       }
     );
     // Redirect to dashboard
-    return res.redirect("https://trincapdash.netlify.app");
+    return res.redirect('https://trincapdash.netlify.app');
   } catch (err) {
-    // Enhanced error logging for debugging
-    console.error("OAuth2 callback error (full):", {
-      message: err.message,
-      responseData: err.response?.data,
-      responseStatus: err.response?.status,
-      stack: err.stack,
-    });
-    return res
-      .status(500)
-      .send(
-        `<pre>OAuth2 setup failed.\n\nError: ${
-          err.message
-        }\n\nResponse Data: ${JSON.stringify(
-          err.response?.data,
-          null,
-          2
-        )}\n\nStack: ${err.stack}</pre>`
-      );
+    console.error('OAuth2 callback error:', err.response?.data || err.message);
+    return res.status(500).send('OAuth2 setup failed. Please contact support.');
   }
 });
 
