@@ -110,7 +110,7 @@ async function handleStudentCreatedPostEmit({
     grade: newAccount.grade || null,
     lessonsCompleted: newAccount.lessonsCompleted || 0,
   });
-  const redirectUrl = "https://trinitycapitalsimulation.netlify.app";
+  const redirectUrl = https://trinity-capital.net";
   io.emit("creationSuccesful", { account: newAccount, redirectUrl });
   res.status(201).json({ account: newAccount, redirectUrl });
 }
@@ -276,8 +276,8 @@ app.post("/createAccount", async (req, res) => {
   // Check if this is a teacher code
   const isTeacher = codes.type === "teacher";
   const redirectUrl = isTeacher
-    ? "https://trincapdash.netlify.app"
-    : "https://trinitycapitalsimulation.netlify.app";
+    ? "https://teacher-dashboard.trinity-capital.net"
+    : "https://trinity-capital.net";
 
   // Extract teacher, school, and class period from the access code document
   const teacher = codes.teacher || "";
@@ -466,7 +466,7 @@ app.get("/oauth2/callback", async (req, res) => {
       }
     );
     // Redirect to dashboard
-    return res.redirect("https://trincapdash.netlify.app");
+    return res.redirect("https://teacher-dashboard.trinity-capital.net");
   } catch (err) {
     // Enhanced error logging for debugging
     console.error("OAuth2 callback error (full):", {
@@ -554,3 +554,4 @@ app.get("/oauth2/callback", async (req, res) => {
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+
