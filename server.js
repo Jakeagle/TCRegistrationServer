@@ -110,7 +110,7 @@ async function handleStudentCreatedPostEmit({
     grade: newAccount.grade || null,
     lessonsCompleted: newAccount.lessonsCompleted || 0,
   });
-  const redirectUrl = https://trinity-capital.net";
+  const redirectUrl = "https://trinity-capital.net";
   io.emit("creationSuccesful", { account: newAccount, redirectUrl });
   res.status(201).json({ account: newAccount, redirectUrl });
 }
@@ -554,4 +554,5 @@ app.get("/oauth2/callback", async (req, res) => {
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+
 
