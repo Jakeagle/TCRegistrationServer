@@ -460,7 +460,7 @@ app.get('/oauth2/callback', async (req, res) => {
       },
     );
     // Redirect to dashboard
-    return res.redirect('https://trincapdash.netlify.app');
+    return res.redirect('https://teacher-dashboard.trinity-capital.net');
   } catch (err) {
     console.error('OAuth2 callback error:', err.response?.data || err.message);
     return res.status(500).send('OAuth2 setup failed. Please contact support.');
