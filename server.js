@@ -468,7 +468,7 @@ app.get('/oauth2/callback', async (req, res) => {
 });
 
 // --- SEND EMAIL WITH TEACHER'S GOOGLE OAUTH2 ---
-/* app.post('/sendEmail', async (req, res) => {
+app.post('/sendEmail', async (req, res) => {
   const { sender, recipients, subject, message } = req.body;
   if (!sender || !recipients || !subject || !message) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -527,7 +527,7 @@ app.get('/oauth2/callback', async (req, res) => {
     }
     return res.status(500).json({ error: 'Failed to send email' });
   }
-}); */
+});
 
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);
